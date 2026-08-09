@@ -23,11 +23,20 @@ permissions:
 jobs:
   publish:
     name: ${{ matrix.arch }}
-    runs-on: ubuntu-latest
+    # Each architecture builds on its own hardware. Cross-building under QEMU
+    # segfaults gcc and collect2 partway through the libGammu compile, and it is
+    # nondeterministic, so retrying does not help.
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        arch: [aarch64, amd64]
+        include:
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+            base: ghcr.io/home-assistant/aarch64-base:3.19
+          - arch: amd64
+            runner: ubuntu-latest
+            base: ghcr.io/home-assistant/amd64-base:3.19
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +50,8 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Publishing version $version"
 
+      - uses: docker/setup-buildx-action@v3
+
       - name: Log in to ghcr.io
         uses: docker/login-action@v3
         with:
@@ -48,15 +59,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # The official builder cross-builds with QEMU and applies the add-on
-      # labelling Supervisor expects.
+      # Built directly rather than through home-assistant/builder, which always
+      # cross-builds with QEMU. The labels Supervisor reads are applied here.
       - name: Build and push
-        uses: home-assistant/builder@2024.03.5
+        uses: docker/build-push-action@v6
         with:
-          args: |
-            --${{ matrix.arch }} \
-            --target /data/sms-gammu-gateway \
-            --image hass-sms-gammu-gateway-{arch} \
-            --docker-hub ghcr.io/homeops \
-            --version ${{ steps.meta.outputs.version }} \
-            --addon
+          context: sms-gammu-gateway
+          build-args: BUILD_FROM=${{ matrix.base }}
+          push: true
+          tags: |
+            ghcr.io/homeops/hass-sms-gammu-gateway-${{ matrix.arch }}:${{ steps.meta.outputs.version }}
+            ghcr.io/homeops/hass-sms-gammu-gateway-${{ matrix.arch }}:latest
+          labels: |
+            io.hass.version=${{ steps.meta.outputs.version }}
+            io.hass.arch=${{ matrix.arch }}
+            io.hass.type=addon
+            io.hass.name=SMS Gammu Gateway (HomeOps)
+            org.opencontainers.image.source=https://github.com/HomeOps/HASS-SMS-Gammu-Gateway
+            org.opencontainers.image.licenses=GPL-2.0-or-later
