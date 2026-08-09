@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.7.1...sms-gammu-gateway-v1.8.0) (2026-08-09)
+
+
+### Features
+
+* add experimental voice call support with automatic recovery and updated documentation ([29a1495](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/29a14952f4043f6322a92deb6ad5314757ee5dbb))
+* add Flash SMS support and enhance SMS sending reliability; update version to 1.5.5 ([0692e56](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/0692e56a66e010303054d90e397e89891f4ed0e8))
+* add mqtt_device_id option for multiple gateway instances and enhance standalone Docker support ([0a76a4b](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/0a76a4b38b11881086c67799370eb296cab64b7c))
+* add real-time call monitoring and sms detection via Gammu callbacks ([b8e1e93](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/b8e1e93507056917f79219a377ec26936a45766c))
+* enhance error handling for SMS sending; update version to 1.5.6 in changelog and config files ([c67bc09](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/c67bc0989d8dbc05200d066cfa7c4888c61216ab))
+* Implement SMS Gammu Gateway with REST API and MQTT support ([dee325d](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/dee325daec29ff04ef21e228d04140a38182b714))
+* improve modem monitoring, extend message length, add persistent device IDs ([cdd2748](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/cdd27485ea9b21bc02668da631474383119b6fcd))
+* major update with new features and improvements ([ae18506](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/ae18506a3c31f49cf026218758379cda5d992c04))
+* MQTT reconnection logic,  SMS re-trigger after restart, added Voice call support ([51dcc82](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/51dcc825b319c726344838a9d656ea225cda30ec))
+* update changelog for version 1.5.7; enhance SMS decoding with error handling and fix authenticated endpoint responses ([d57a8b4](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/d57a8b4d32f76aa86ff55a61ce9a659742c31d4e))
+* update phone number validation to support comma-separated recipients in SMS ([97237c1](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/97237c12474c8433266fede8815d012b8f692a98))
+* Update to version 1.3.0, enhance MQTT Unicode support, and improve changelog ([775d6ce](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/775d6cecb648f0ec91ccff5f6e343af2cda86fe6))
+* Update to version 1.3.2, enhance device connectivity tracking, and improve changelog ([99e7723](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/99e772378c535d42bd71f2830f05f34313e424d2))
+
+
+### Bug Fixes
+
+* adjust call duration and recovery timing for improved call handling ([0f36077](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/0f36077dff00b95144df2d49730155b30c4beaed))
+* adjust call duration management to prevent race conditions during dialing ([335c5d7](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/335c5d77248273ae8c0b4cc9441dc9ca8e78bff4))
+* **config:** add additional USB device mappings for improved compatibility ([775b17f](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/775b17f7d4d1609ca9b54c961211dff28df1db3f))
+* enhance post-call recovery by re-initializing modem connection and re-registering callbacks ([b149ee9](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/b149ee9a4c8618f717f53a01418ad432ae6271ac))
+* improve hangup handling ([ae9f328](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/ae9f3286b0b1f7c42917c5495f941401b02c9f83))
+* Incoming call stuck ON ([69a8beb](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/69a8beb84deacaa7e01a081887a671c9125cbfb6))
+* map ttyACM4-7 and enable uart ([5d205c1](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/5d205c1642442d64e3e657952190744ce2a96ea1))
+* **sms-gateway:** fix modem freezing and race conditions (v1.5.2) ([6111a75](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/6111a750500c8af078e085c494633d2b67292676))
+* update Swagger API documentation link to relative path ([9a78f8e](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/9a78f8e69b727dec1296687b377e2c8e86e1b6de))
+* update voice call handling in documentation and code to reflect auto-hangup removal ([244afcf](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/244afcf010b32909d0e834cb583818a2550321a8))
+* voice call hangup ([42571f4](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/42571f41ff5ce29a7a81c8760a2debe35bda571d))
+
+
+### Build and packaging
+
+* compile libGammu from source with the upstream SMS prompt fix ([b198972](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/b198972c1ed77b44e73c6c988ad93ace598184a2))
+
 ## [1.7.1] – 2026-06-16
 
 ### Fixed
