@@ -17,10 +17,15 @@ ARG GAMMU_PR=1177
 
 COPY requirements.txt /app/requirements.txt
 
+# py3-cryptography and py3-openssl come from apk rather than pip: cryptography
+# has no musl wheel for every architecture, and building it from source needs a
+# Rust toolchain, which fails the i386 build. Alpine ships both prebuilt.
 RUN apk update \
     && apk add --no-cache \
         python3 \
         py3-pip \
+        py3-cryptography \
+        py3-openssl \
         usb-modeswitch \
         usb-modeswitch-udev \
     && apk add --no-cache --virtual .build-deps \
