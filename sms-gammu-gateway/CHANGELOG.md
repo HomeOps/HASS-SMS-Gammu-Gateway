@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.6](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.5...sms-gammu-gateway-v1.8.6) (2026-08-09)
+
+
+### Bug Fixes
+
+* build the merged upstream gammu instead of patching a pull request ([#23](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/issues/23)) ([9dbf2e8](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/9dbf2e86f59b22f63a8cc9dba3eaa06062f0531f))
+
 ## [1.8.5](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.4...sms-gammu-gateway-v1.8.5) (2026-08-09)
 
 
