@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.2](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.1...sms-gammu-gateway-v1.8.2) (2026-08-09)
+
+
+### Documentation
+
+* lead with LTE modem support and the US 2G shutdown ([4e3793e](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/4e3793e0f0cfb82f0ca28d4b12880ba9482a117a))
+* lead with LTE modem support and the US 2G shutdown ([c5f6148](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/c5f614848ed4c4aead0124acd43eda506945737c))
+* link the exact SIM7670G board that was verified ([2516d43](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/2516d43d462b1ef2807505246f5dc89dfaa14952))
+* quote the delivered price for the SIM7670G two-pack ([b2e79b3](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/b2e79b378852d3f5599378c41ca307cfeea5d851))
+* use the actual price paid for the SIM7670G two-pack ([cea2bfc](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/cea2bfcac455dcfdbf278b1718acde6dd8fc8ab2))
+
 ## [1.8.1](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.0...sms-gammu-gateway-v1.8.1) (2026-08-09)
 
 
