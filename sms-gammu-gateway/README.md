@@ -17,9 +17,10 @@ REST API SMS Gateway using python-gammu for USB GSM modems.
 > they carried SMS over the legacy circuit-switched core, which was retired alongside 2G.
 >
 > **This fork is verified send/receive with the SIMCom SIM7670G**, an LTE Cat-1 bis module with
-> VoLTE, on AT&T. It requires a libGammu fix that this fork's image ships
-> ([gammu/gammu#1177](https://github.com/gammu/gammu/pull/1177)) — without it every send fails with
-> `TIMEOUT[14]` even though the modem is registered and healthy. See
+> VoLTE, on AT&T. It requires a libGammu fix, diagnosed here and **merged upstream on 2026-08-09**
+> as [gammu/gammu#1177](https://github.com/gammu/gammu/pull/1177) — without it every send fails with
+> `TIMEOUT[14]` even though the modem is registered and healthy. No gammu release carries it yet
+> (1.44.0 predates the merge), so this image builds from the merge commit until one does. See
 > [Supported hardware](#supported-hardware).
 >
 > Outside the US this matters less: 2G is still widely available across Europe, where the SIM800L
@@ -91,16 +92,24 @@ If reliable operation matters to you, a **SIM800L-based module is the recommende
 
 ### Additionally verified in this fork: SIMCom SIM7670G
 
-**The SIM7670G works with this fork.** It does *not* work with a stock libGammu, and the reason is
-not the modem.
+**The SIM7670G works with this fork.** It does *not* work with a released libGammu, and the reason
+is not the modem.
 
-libGammu only recognises the SMS edit prompt as the exact string `"> "`. The SIM7670G emits a bare
-`">"` terminated by CRLF (`0d 0a 3e 0d 0a` — no `0x20`), so the prompt is never matched,
-`GSM_SendSMS` blocks in `GSM_WaitFor` until `commtimeout`, and **every send fails with
-`TIMEOUT[14]`** while the modem looks perfectly healthy: registered, good signal, receiving fine.
-Diagnosed and fixed upstream in [gammu/gammu#1176](https://github.com/gammu/gammu/issues/1176) /
-[#1177](https://github.com/gammu/gammu/pull/1177); this fork's image builds libGammu with that fix
-applied, so sending works out of the box.
+Released libGammu recognises the SMS edit prompt only as the exact string `"> "`. The SIM7670G emits
+a bare `">"` terminated by CRLF (`0d 0a 3e 0d 0a` — no `0x20`), so the prompt is never matched,
+`GSM_SendSMS` blocks in `GSM_WaitFor`, and **every send fails with `TIMEOUT[14]`** while the modem
+looks perfectly healthy: registered, good signal, receiving fine.
+
+Diagnosed in [gammu/gammu#1176](https://github.com/gammu/gammu/issues/1176), fixed in
+[#1177](https://github.com/gammu/gammu/pull/1177), and **merged upstream on 2026-08-09** — so this
+is gammu's behaviour now, not a fork-local patch. Strictly the module is the one out of spec: 3GPP
+TS 27.005 §3.5.1 does specify the trailing space. But firmware cannot be patched by its users, most
+AT implementations already tolerate a bare `>`, and the merged change accepts it only while gammu is
+waiting for a prompt, so ordinary responses are unaffected.
+
+No gammu *release* contains the fix yet — 1.44.0 shipped five days before the merge — so this image
+builds from the merge commit. The build fails deliberately once a newer release appears, to stop it
+tracking master forever. Sending works out of the box either way.
 
 What was verified on real hardware (SIM7670G-LNGV, firmware `2382B02SIM767XM5A`, AT&T, CDC-ACM at
 115200):
