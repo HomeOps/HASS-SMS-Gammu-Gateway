@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.7](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.6...sms-gammu-gateway-v1.8.7) (2026-08-09)
+
+
+### Bug Fixes
+
+* run gammu on a single owned thread instead of per-call executors ([#21](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/issues/21)) ([39ddc87](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/39ddc87d7ad74f28ae07deb3f95b6749435f46e3))
+
 ## [1.8.6](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.5...sms-gammu-gateway-v1.8.6) (2026-08-09)
 
 
