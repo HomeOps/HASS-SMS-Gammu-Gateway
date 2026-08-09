@@ -12,7 +12,11 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # so there is exactly one source of truth. When that PR is merged the build fails
 # on purpose -- see the guard below -- forcing a move to a released gammu instead
 # of quietly carrying a patch that is no longer needed.
-ARG GAMMU_VERSION=1.42.0
+#
+# GAMMU_VERSION must satisfy GAMMU_REQUIRED in python-gammu's setup.py, which is
+# 1.44.0 as of python-gammu 3.4.0. Building the sdist against anything older
+# fails with "Can not find supported Gammu version using pkg-config!".
+ARG GAMMU_VERSION=1.44.0
 ARG GAMMU_PR=1177
 
 COPY requirements.txt /app/requirements.txt
