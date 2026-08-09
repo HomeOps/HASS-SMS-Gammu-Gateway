@@ -55,3 +55,36 @@ jobs:
         run: |
           docker run --rm sms-gammu-gateway:ci \
             python3 -c "import gammu; print(gammu.Version())"
+
+      # End to end against a fake modem on a pseudo terminal. Everything the image
+      # ships is in the loop: its libGammu, python-gammu linked against it,
+      # support.py, the Flask API and the send path. The base image entrypoint is
+      # s6, so it is overridden to run the harness directly.
+      - name: 'E2E: standard prompt sends'
+        run: |
+          docker run --rm --entrypoint python3 \
+            -v "${{ github.workspace }}/sms-gammu-gateway/tests/e2e:/e2e:ro" \
+            sms-gammu-gateway:ci /e2e/send_sms_e2e.py --prompt padded --expect sent
+
+      # The regression that matters. A stock libGammu fails this with TIMEOUT[14];
+      # only a build carrying gammu/gammu#1177 sends. If the Dockerfile's patch step
+      # ever silently stops applying, this is what catches it.
+      - name: 'E2E: bare prompt sends (proves the libGammu patch is in the image)'
+        run: |
+          docker run --rm --entrypoint python3 \
+            -v "${{ github.workspace }}/sms-gammu-gateway/tests/e2e:/e2e:ro" \
+            sms-gammu-gateway:ci /e2e/send_sms_e2e.py --prompt bare --expect sent
+
+      # A prompt that is corrupt rather than merely unpadded must still be rejected:
+      # the patch widens what counts as a prompt, and this pins how far.
+      - name: 'E2E: corrupt prompt fails without sending'
+        run: |
+          docker run --rm --entrypoint python3 \
+            -v "${{ github.workspace }}/sms-gammu-gateway/tests/e2e:/e2e:ro" \
+            sms-gammu-gateway:ci /e2e/send_sms_e2e.py --prompt garbage --expect failed
+
+      - name: 'E2E: silent modem fails without sending'
+        run: |
+          docker run --rm --entrypoint python3 \
+            -v "${{ github.workspace }}/sms-gammu-gateway/tests/e2e:/e2e:ro" \
+            sms-gammu-gateway:ci /e2e/send_sms_e2e.py --prompt silent --expect failed
