@@ -70,8 +70,15 @@ RUN apk update \
         -DBUILD_TESTING=OFF \
     && make -C /tmp/gammu-build -j2 \
     && make -C /tmp/gammu-build install \
-    # Compiled here so it links the patched libGammu, not a packaged one.
-    && pip3 install --break-system-packages --no-cache-dir -r /app/requirements.txt \
+    # --no-binary python-gammu is load bearing. PyPI ships musllinux wheels that
+    # auditwheel has repaired, meaning they carry their own libGammu (plus
+    # libssl, libcrypto, libmariadb, libpq, ...) inside python_gammu.libs/ with
+    # the ELF references rewritten to point there. Installing that wheel makes
+    # the extension ignore the patched library built above, and sending fails
+    # with TIMEOUT[14]. Building from the sdist compiles against gammu-dev and
+    # links /usr/lib/libGammu.so.8, and drops the bundled copies with it.
+    && pip3 install --break-system-packages --no-cache-dir \
+        --no-binary python-gammu -r /app/requirements.txt \
     && apk del .build-deps \
     && rm -rf /tmp/gammu-src /tmp/gammu-build /tmp/gammu-pr.diff /var/cache/apk/*
 
