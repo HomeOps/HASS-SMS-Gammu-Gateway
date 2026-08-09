@@ -4,20 +4,25 @@ FROM $BUILD_FROM
 # Set shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# libGammu is built from source rather than installed from apk so the SMS prompt
-# fix can be applied. Alpine's gammu only recognises an SMS prompt of "> ", which
+# libGammu is built from source rather than installed from apk so it carries the
+# SMS prompt fix. Alpine's gammu only recognises an SMS prompt of "> ", which
 # stalls GSM_SendSMS on modems emitting a bare ">" (eg. SIMCom SIM7670G).
 #
-# The patch is fetched from the open upstream pull request rather than vendored,
-# so there is exactly one source of truth. When that PR is merged the build fails
-# on purpose -- see the guard below -- forcing a move to a released gammu instead
-# of quietly carrying a patch that is no longer needed.
+# That fix is no longer a patch. It was merged upstream on 2026-08-09 as
+# gammu/gammu#1177, so this pins the merge commit instead of applying a diff --
+# one source of truth, and no risk of a patch that silently stops applying.
 #
-# GAMMU_VERSION must satisfy GAMMU_REQUIRED in python-gammu's setup.py, which is
-# 1.44.0 as of python-gammu 3.4.0. Building the sdist against anything older
-# fails with "Can not find supported Gammu version using pkg-config!".
-ARG GAMMU_VERSION=1.44.0
-ARG GAMMU_PR=1177
+# No release contains it yet: 1.44.0 shipped 2026-08-04, before the merge. The
+# guard below fails the build as soon as gammu cuts any newer release, since any
+# release after the merge date carries the fix, at which point this should move
+# to a plain release tag and drop the pinned commit.
+#
+# Whatever it is pinned to must satisfy GAMMU_REQUIRED in python-gammu's
+# setup.py, which is 1.44.0 as of python-gammu 3.4.0. Building the sdist against
+# anything older fails with "Can not find supported Gammu version using
+# pkg-config!". The pinned commit is master after 1.44.0, so it qualifies.
+ARG GAMMU_COMMIT=c251dcce795d68cf358420111d00853d45169138
+ARG GAMMU_LAST_RELEASE=1.44.0
 
 COPY requirements.txt /app/requirements.txt
 
@@ -36,27 +41,33 @@ RUN apk update \
         build-base \
         cmake \
         curl \
-        git \
-        patch \
         pkgconfig \
         python3-dev \
         libffi-dev \
         linux-headers \
     #
-    # Tripwire. A merged PR means the fix is heading for a release and this
-    # source build should be retired.
-    && if curl -fsSL "https://api.github.com/repos/gammu/gammu/pulls/${GAMMU_PR}" \
-            | tr -d ' ' | grep -q '"merged":true'; then \
-         echo "ERROR: gammu#${GAMMU_PR} has been merged upstream."; \
-         echo "Set GAMMU_VERSION to a release containing the fix and delete this patch step."; \
+    # Tripwire. Any gammu release cut after 2026-08-09 contains the SMS prompt
+    # fix, so the first one to appear should replace this pinned commit. Left
+    # deliberately noisy: building master forever is not the intended end state.
+    # A failed lookup (rate limit, no network) yields an empty string and is
+    # skipped rather than breaking the build for an unrelated reason.
+    && LATEST_RELEASE="$(curl -fsSL https://api.github.com/repos/gammu/gammu/releases/latest \
+            | tr -d ' ' | sed -n 's/.*"tag_name":"\([^"]*\)".*/\1/p' || true)" \
+    && if [ -n "${LATEST_RELEASE}" ] && [ "${LATEST_RELEASE}" != "${GAMMU_LAST_RELEASE}" ]; then \
+         echo "ERROR: gammu ${LATEST_RELEASE} has been released."; \
+         echo "It postdates the merge of the SMS prompt fix (gammu/gammu#1177)."; \
+         echo "Build from that tag and delete GAMMU_COMMIT and this guard."; \
          exit 1; \
        fi \
-    && git clone --quiet --depth 1 --branch "${GAMMU_VERSION}" \
-        https://github.com/gammu/gammu.git /tmp/gammu-src \
-    && curl -fsSL "https://github.com/gammu/gammu/pull/${GAMMU_PR}.diff" -o /tmp/gammu-pr.diff \
-    # patch exits non-zero if the change is missing or already present, so a
-    # gammu bump that includes the fix fails here rather than silently no-opping.
-    && patch -p1 -d /tmp/gammu-src < /tmp/gammu-pr.diff \
+    # A commit tarball rather than a clone: no git in the image, and the content
+    # is pinned by hash rather than by a branch that moves.
+    && curl -fsSL "https://github.com/gammu/gammu/archive/${GAMMU_COMMIT}.tar.gz" \
+        -o /tmp/gammu.tar.gz \
+    && mkdir -p /tmp/gammu-src \
+    && tar -xzf /tmp/gammu.tar.gz -C /tmp/gammu-src --strip-components=1 \
+    # Assert the pinned commit really carries the fix. Cheap, and it turns a
+    # mistyped hash into a build failure rather than an image that cannot send.
+    && grep -q 'AT_SMS_PROMPT_BARE' /tmp/gammu-src/libgammu/protocol/at/at.h \
     # Prefix /usr so libGammu lands on musl's default search path and gammu.pc is
     # where pkg-config looks when python-gammu is compiled below.
     && cmake -S /tmp/gammu-src -B /tmp/gammu-build \
@@ -84,7 +95,7 @@ RUN apk update \
     && pip3 install --break-system-packages --no-cache-dir \
         --no-binary python-gammu -r /app/requirements.txt \
     && apk del .build-deps \
-    && rm -rf /tmp/gammu-src /tmp/gammu-build /tmp/gammu-pr.diff /var/cache/apk/*
+    && rm -rf /tmp/gammu-src /tmp/gammu-build /tmp/gammu.tar.gz /var/cache/apk/*
 
 RUN python3 -c "import gammu; v = gammu.Version(); print('libGammu', v[0], 'python-gammu', v[1])"
 

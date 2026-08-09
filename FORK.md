@@ -30,9 +30,11 @@ Integration tests run against gammu's `dummy` connection driver, so the suite ne
 ## Related upstream work
 
 - [gammu/gammu#1176](https://github.com/gammu/gammu/issues/1176) /
-  [#1177](https://github.com/gammu/gammu/pull/1177) — libGammu only recognises an SMS prompt of
-  `"> "`, so modems emitting a bare `">"` (for example the SIMCom SIM7670G) stall in `GSM_SendSMS`
-  until `commtimeout`. Fix verified on hardware.
+  [#1177](https://github.com/gammu/gammu/pull/1177) — libGammu only recognised an SMS prompt of
+  `"> "`, so modems emitting a bare `">"` (for example the SIMCom SIM7670G) stalled in
+  `GSM_SendSMS` until the timeout. Verified on hardware and **merged upstream 2026-08-09**, so it
+  is gammu's behaviour now rather than a fork-local patch. The image builds the merge commit until
+  a gammu release carries it.
 - [PavelVe/home-assistant-addons#51](https://github.com/PavelVe/home-assistant-addons/issues/51) /
   [#52](https://github.com/PavelVe/home-assistant-addons/pull/52) — a timed-out gammu call leaves a
   worker thread running inside libGammu while the lock is released.
