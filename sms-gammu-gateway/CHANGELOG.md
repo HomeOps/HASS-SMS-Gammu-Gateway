@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.3](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.2...sms-gammu-gateway-v1.8.3) (2026-08-09)
+
+
+### Bug Fixes
+
+* build only 64-bit images and cap make parallelism ([d1bb890](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/d1bb8900c8ab4dccdaa8449209f7e9218967a59d))
+* get image publishing working ([93b7a09](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/93b7a092793460a06e059f20fb9bb296eca17afb))
+* install cryptography from apk so 32-bit builds succeed ([60572aa](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/60572aac470c5bc7d79592d57fbaf3fd48439471))
+
 ## [1.8.2](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.1...sms-gammu-gateway-v1.8.2) (2026-08-09)
 
 
