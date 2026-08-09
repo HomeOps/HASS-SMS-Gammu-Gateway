@@ -112,16 +112,23 @@ Not yet verified: the full add-on running against the patched image on this modu
 with the patched library directly. If you run it, reports are welcome.
 
 **Where to buy:**
-[AliExpress](https://www.aliexpress.com/w/wholesale-SIM7670G.html) ·
-[Amazon](https://www.amazon.com/s?k=SIM7670G)
 
-Both are searches rather than specific listings, since individual listings disappear constantly.
-AliExpress has far better availability and pricing for this part; Amazon carries it only
-intermittently and usually at a markup, so check there first only if you want faster delivery or an
-easier return path.
+- **The exact board verified here** —
+  [AliExpress listing](https://www.aliexpress.us/item/3256806704247514.html)
+- If that listing is gone —
+  [AliExpress search](https://www.aliexpress.com/w/wholesale-SIM7670G.html) ·
+  [Amazon search](https://www.amazon.com/s?k=SIM7670G)
+
+Individual AliExpress listings disappear regularly, hence the searches as a fallback. AliExpress has
+much better availability and pricing for this part; Amazon carries it only intermittently and
+usually at a markup, so go there only if you want faster delivery or an easier return path.
+
+Note the linked listing ships **two units**, so the per-module cost is half the listed price —
+roughly USD 10–15 each at the time of writing. A spare is genuinely useful: these enumerate as three
+CDC-ACM interfaces and a second board lets you test without disturbing a working gateway.
 
 Look for a **USB board** (not a bare module needing a carrier), with an LTE antenna and a nano-SIM
-slot. The variant verified here reports itself as `SIM7670G-LNGV`. Expect roughly USD 20–30.
+slot. The variant verified here reports itself as `SIM7670G-LNGV`.
 
 Practical notes for this module:
 
