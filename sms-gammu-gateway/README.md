@@ -105,11 +105,21 @@ applied, so sending works out of the box.
 What was verified on real hardware (SIM7670G-LNGV, firmware `2382B02SIM767XM5A`, AT&T, CDC-ACM at
 115200):
 
-- **Send** — stock libGammu: `TIMEOUT[14]`. Patched libGammu: `message reference=4`, delivered.
+- **Send** — stock libGammu: `TIMEOUT[14]` after a 29 s stall. Patched libGammu: sent and delivered.
 - **Receive** — inbound SMS read and published normally.
+- **Through the add-on** — verified on 1.8.4: `SMS sent successfully`, message reference returned in
+  about a second, delivered to the handset.
 
-Not yet verified: the full add-on running against the patched image on this module. Send was proven
-with the patched library directly. If you run it, reports are welcome.
+One trap worth knowing if you build your own image: `pip install python-gammu` pulls a musllinux
+wheel that carries **its own copy of libGammu** under `python_gammu.libs/`, so a patched system
+library is ignored and sending still fails with `TIMEOUT[14]`. This add-on installs it with
+`--no-binary python-gammu` so it compiles against `/usr/lib/libGammu.so.8`. Check with:
+
+```sh
+ldd /usr/lib/python3*/site-packages/gammu/_gammu*.so | grep -i gammu
+```
+
+It must resolve to `/usr/lib/libGammu.so.8`, not into `python_gammu.libs/`.
 
 **Where to buy:**
 
