@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.4](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.3...sms-gammu-gateway-v1.8.4) (2026-08-09)
+
+
+### Bug Fixes
+
+* build against gammu 1.44.0, which python-gammu requires ([fe38a86](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/fe38a86adf6bb2e3517940257eb154420f669006))
+* build python-gammu from source so it uses the patched libGammu ([74ea5f4](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/74ea5f4a37e314d4761f4918832524ac9f8da2b1))
+* build python-gammu from source so it uses the patched libGammu ([20d9f0f](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/20d9f0faf5213e5c165f80c311b07d12fa696a47))
+
 ## [1.8.3](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.2...sms-gammu-gateway-v1.8.3) (2026-08-09)
 
 
