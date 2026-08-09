@@ -123,9 +123,9 @@ Individual AliExpress listings disappear regularly, hence the searches as a fall
 much better availability and pricing for this part; Amazon carries it only intermittently and
 usually at a markup, so go there only if you want faster delivery or an easier return path.
 
-Note the linked listing ships **two units**, so the per-module cost is half the listed price —
-roughly USD 10–15 each at the time of writing. A spare is genuinely useful: these enumerate as three
-CDC-ACM interfaces and a second board lets you test without disturbing a working gateway.
+Note the linked listing ships **two units** — USD 26.10 for the pair as ordered in August 2026, so
+about USD 13 per module. A spare is genuinely useful: these enumerate as three CDC-ACM interfaces,
+and a second board lets you test without disturbing a working gateway.
 
 Look for a **USB board** (not a bare module needing a carrier), with an LTE antenna and a nano-SIM
 slot. The variant verified here reports itself as `SIM7670G-LNGV`.
