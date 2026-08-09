@@ -68,7 +68,7 @@ RUN apk update \
         -DWITH_ODBC=OFF \
         -DWITH_PYTHON=OFF \
         -DBUILD_TESTING=OFF \
-    && make -C /tmp/gammu-build -j"$(nproc)" \
+    && make -C /tmp/gammu-build -j2 \
     && make -C /tmp/gammu-build install \
     # Compiled here so it links the patched libGammu, not a packaged one.
     && pip3 install --break-system-packages --no-cache-dir -r /app/requirements.txt \
