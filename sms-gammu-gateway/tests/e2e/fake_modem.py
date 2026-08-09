@@ -81,6 +81,12 @@ class FakeModem:
         self.commands = []
         self.submitted = []
         self.aborted = False
+        # A real modem is a single conversation: one command, one response. If a new
+        # AT command arrives while the modem is still waiting for a message body,
+        # two callers are driving the port at once and the exchange is corrupt.
+        # Counting it here is how the test observes the race from the modem's side
+        # rather than inferring it from Python.
+        self.overlaps = 0
 
         self._master, slave = pty.openpty()
         self.device = os.ttyname(slave)
@@ -95,6 +101,7 @@ class FakeModem:
 
         self._echo = True
         self._collecting_pdu = False
+        self._overlapped = False
         self._pdu = bytearray()
         self._buffer = bytearray()
         self._stop = threading.Event()
@@ -166,6 +173,7 @@ class FakeModem:
             # this is what makes the bare prompt failure legible instead of a hang.
             self.aborted = True
             self._collecting_pdu = False
+            self._overlapped = False
             self._pdu.clear()
             self._write(b"\r\nOK\r\n")
             return
@@ -173,11 +181,24 @@ class FakeModem:
         if byte == SUBMIT_TERMINATOR:
             self.submitted.append(self._pdu.decode(errors="replace").strip())
             self._pdu.clear()
+            self._overlapped = False
             self._collecting_pdu = False
             self._reply(f"+CMGS: {len(self.submitted)}")
             return
 
         self._pdu.append(byte)
+
+        # A PDU is hex, so "AT" cannot occur in one -- T is not a hex digit. Seeing
+        # it here means a second caller issued a command while this transaction was
+        # still open, and its bytes are being swallowed into the message body. That
+        # is the corruption a released lock allows, observed from the modem's side.
+        if not self._overlapped and b"AT" in bytes(self._pdu).upper():
+            self._overlapped = True
+            self.overlaps += 1
+
+    def switch_to(self, prompt):
+        """Change the prompt shape mid-run, standing in for a modem that recovers."""
+        self.prompt = PROMPTS[prompt]
 
     def _handle(self, line):
         self.commands.append(line)
@@ -191,6 +212,7 @@ class FakeModem:
             # The whole point of the harness: hand back a prompt in the shape being
             # tested, then take the PDU.
             self._collecting_pdu = True
+            self._overlapped = False
             self._write(self.prompt)
             return
 

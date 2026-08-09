@@ -33,6 +33,28 @@ def dummy_phone(tmp_path):
 
 
 @pytest.fixture
+def dummy_worker(tmp_path):
+    """A GammuWorkerProxy driving the dummy phone.
+
+    Same device the dummy_phone fixture uses, reached through the worker thread
+    instead of directly, so the proxy is exercised as the add-on uses it.
+    """
+    # Imported here so collection still reports a clean skip when gammu is absent.
+    from gammu_worker import GammuWorkerProxy
+
+    device = tmp_path / "worker-phone"
+    for sub in DUMMY_TREE:
+        (device / sub).mkdir(parents=True, exist_ok=True)
+
+    proxy = GammuWorkerProxy({"Device": str(device), "Connection": "none", "Model": "dummy"})
+    proxy.init()
+    try:
+        yield proxy
+    finally:
+        proxy.terminate()
+
+
+@pytest.fixture
 def smsc():
     """SMSC entry accepted by the dummy backend."""
     return {"Number": "+123456789"}

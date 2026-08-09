@@ -88,3 +88,31 @@ jobs:
           docker run --rm --entrypoint python3 \
             -v "${{ github.workspace }}/sms-gammu-gateway/tests/e2e:/e2e:ro" \
             sms-gammu-gateway:ci /e2e/send_sms_e2e.py --prompt silent --expect failed
+
+      # The user visible question behind the worker change: after a bad stretch,
+      # does the gateway come back on its own, or stay degraded until restarted?
+      - name: 'E2E: recovers in place once the modem behaves'
+        run: |
+          docker run --rm --entrypoint python3 \
+            -v "${{ github.workspace }}/sms-gammu-gateway/tests/e2e:/e2e:ro" \
+            sms-gammu-gateway:ci /e2e/send_sms_e2e.py --prompt garbage --scenario recovery --monitoring
+
+      # One thread owns the state machine, so concurrent callers queue instead of
+      # reaching the port together. The modem counts interleaving directly: a PDU
+      # cannot contain "AT".
+      - name: 'E2E: concurrent callers never interleave on the port'
+        run: |
+          docker run --rm --entrypoint python3 \
+            -v "${{ github.workspace }}/sms-gammu-gateway/tests/e2e:/e2e:ro" \
+            -e GAMMU_COMMAND_TIMEOUT=10 -e GAMMU_STALL_LIMIT=0 \
+            sms-gammu-gateway:ci /e2e/send_sms_e2e.py --prompt silent --scenario concurrent
+
+      # A modem that never answers cannot be recovered from inside the process:
+      # even the soft reset queues behind a call that cannot be interrupted. The
+      # timeouts are shortened so the give-up path is reached in seconds.
+      - name: 'E2E: a modem that never answers restarts the add-on'
+        run: |
+          docker run --rm --entrypoint python3 \
+            -v "${{ github.workspace }}/sms-gammu-gateway/tests/e2e:/e2e:ro" \
+            -e GAMMU_COMMAND_TIMEOUT=5 -e GAMMU_STALL_LIMIT=3 \
+            sms-gammu-gateway:ci /e2e/send_sms_e2e.py --prompt silent --scenario watchdog
