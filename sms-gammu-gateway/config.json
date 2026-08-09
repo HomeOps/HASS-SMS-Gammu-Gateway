@@ -2,6 +2,7 @@
   "name": "SMS Gammu Gateway (HomeOps)",
   "version": "1.8.0",
   "slug": "sms_gammu_gateway_homeops",
+  "image": "ghcr.io/homeops/hass-sms-gammu-gateway-{arch}",
   "description": "SMS gateway for USB GSM modems with REST API, MQTT integration and Home Assistant auto-discovery. Developed and tested with SIM800L; other modems may work but are community-supported. Send/receive SMS, Flash SMS support, signal and network monitoring, incoming and missed call detection, SMS cost tracking. Web UI with Swagger documentation.",
   "startup": "services",
   "arch": [

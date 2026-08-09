@@ -75,9 +75,9 @@ If reliable operation matters to you, a **SIM800L-based module is the recommende
 
 1. Add repository to your Home Assistant:
    ```
-   https://github.com/pavelve/home-assistant-addons
+   https://github.com/HomeOps/HASS-SMS-Gammu-Gateway
    ```
-2. Find **SMS Gammu Gateway** in add-on store
+2. Find **SMS Gammu Gateway (HomeOps)** in add-on store
 3. Click Install
 4. Configure the add-on (see below)
 5. Start the add-on
@@ -86,7 +86,7 @@ If reliable operation matters to you, a **SIM800L-based module is the recommende
 
 If you run Home Assistant as a manual Docker container (HA Container) — or you don't use Home Assistant at all — you can still run the gateway as a standalone Docker container. The MQTT auto-discovery will integrate it into HA the same way as the add-on.
 
-> Thanks to [@mickeyreg](https://github.com/PavelVe/home-assistant-addons/issues/15#issuecomment-4582397033) for figuring this out.
+> Thanks to [@mickeyreg](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/issues/15#issuecomment-4582397033) for figuring this out.
 
 **Limitations:**
 - The HA Ingress web UI is not available — access the web UI directly on port `5000`.
@@ -97,8 +97,8 @@ If you run Home Assistant as a manual Docker container (HA Container) — or you
 ### Step 1 — Clone the repository
 
 ```bash
-git clone https://github.com/PavelVe/home-assistant-addons.git
-cd home-assistant-addons/sms-gammu-gateway/
+git clone https://github.com/HomeOps/HASS-SMS-Gammu-Gateway.git
+cd HASS-SMS-Gammu-Gateway/sms-gammu-gateway/
 ```
 
 ### Step 2 — Create `run-standalone.sh`
@@ -307,7 +307,7 @@ Enable MQTT in configuration and the add-on will automatically create:
 
 All entities appear under device **"SMS Gateway"** in Home Assistant.
 
-![MQTT Device Overview](https://raw.githubusercontent.com/pavelve/home-assistant-addons/main/sms-gammu-gateway/images/mqtt-device.png)
+![MQTT Device Overview](https://raw.githubusercontent.com/HomeOps/HASS-SMS-Gammu-Gateway/main/sms-gammu-gateway/images/mqtt-device.png)
 
 ### Method 2: RESTful Notify
 
@@ -326,7 +326,7 @@ notify:
     message_param_name: message
 ```
 
-![Actions Notify Example](https://raw.githubusercontent.com/pavelve/home-assistant-addons/main/sms-gammu-gateway/images/actions-notify.png)
+![Actions Notify Example](https://raw.githubusercontent.com/HomeOps/HASS-SMS-Gammu-Gateway/main/sms-gammu-gateway/images/actions-notify.png)
 
 ### Method 3: Direct Service Calls
 
@@ -493,7 +493,7 @@ Access full API documentation via:
 - **Ingress** (recommended): Click "Open Web UI" in Home Assistant add-on panel, then click "Open Swagger API Documentation"
 - **Direct access**: `http://your-ha-ip:PORT/docs/` (PORT is configurable in Network settings)
 
-![Swagger UI Documentation](https://raw.githubusercontent.com/pavelve/home-assistant-addons/main/sms-gammu-gateway/images/swagger-ui.png)
+![Swagger UI Documentation](https://raw.githubusercontent.com/HomeOps/HASS-SMS-Gammu-Gateway/main/sms-gammu-gateway/images/swagger-ui.png)
 
 ### Main Endpoints
 
@@ -577,7 +577,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
 
 ## 🤝 Support
 
-- **Issues**: [GitHub Issues](https://github.com/pavelve/home-assistant-addons/issues)
+- **Issues**: [GitHub Issues](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/issues)
 - **Documentation**: This page and Swagger UI at `/docs/`
 - **Source**: Based on [sms-gammu-gateway](https://github.com/pajikos/sms-gammu-gateway)
 

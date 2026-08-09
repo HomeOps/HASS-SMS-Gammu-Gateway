@@ -361,6 +361,6 @@ See [CHANGELOG.md](./CHANGELOG.md) for complete version history and detailed cha
 
 ## 🆘 Support
 
-- **Issues**: [GitHub Issues](https://github.com/pavelve/home-assistant-addons/issues)
+- **Issues**: [GitHub Issues](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/issues)
 - **Swagger UI**: Available via Ingress or direct port access
 - **Original Project**: [sms-gammu-gateway](https://github.com/pajikos/sms-gammu-gateway)
