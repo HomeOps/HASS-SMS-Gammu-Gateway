@@ -52,6 +52,25 @@ do not release on it". Documentation changes therefore do not appear in the
 changelog; that is an accepted cost of never shipping an image that is byte
 identical to the previous one.
 
+## The PR title is the release instruction
+
+The repository is **squash-only** (`allow_merge_commit` and `allow_rebase_merge` are
+off) with `squash_merge_commit_title = PR_TITLE`. Every merged PR becomes exactly
+one commit on `main` whose subject is the PR title, so **the PR title is what
+release-please reads** — not the commit messages on the branch.
+
+Practical consequences:
+
+- Getting the type wrong is fixable up to the moment of merge: retitle the PR.
+  Branch commit messages no longer matter to the release, which is what makes this
+  safe under the no-force-push rule.
+- Do not restore merge commits. With a merge commit GitHub echoes the branch
+  commit subject into the merge commit body, release-please parses both, and the
+  same change is listed twice in the changelog (seen on PR #16 → release PR #18).
+- `squash_merge_commit_message = PR_BODY`, so the PR description becomes the commit
+  body and `Fixes #N` links are picked up. Beware that a PR body containing the
+  literal text `BREAKING CHANGE:` will be read as a major bump.
+
 ## Verifying a release actually shipped
 
 A merged release PR should produce, in order: a `sms-gammu-gateway-vX.Y.Z` tag, a
