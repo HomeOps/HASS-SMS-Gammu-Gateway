@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff
+      - run: ruff check .
+      - run: ruff format --check .
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # python-gammu compiles against libgammu, and the integration tests drive
+      # gammu's dummy driver, so the headers are needed even without a modem.
+      - name: Install libgammu
+        run: sudo apt-get update && sudo apt-get install -y libgammu-dev pkg-config
+      - name: Install dependencies
+        run: pip install -r sms-gammu-gateway/requirements-dev.txt
+      - name: Run tests
+        run: pytest
+
+  build:
+    name: Build add-on (amd64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Smoke test only. The image compiles libGammu from source, so building
+      # every architecture on each pull request is not worth the wall clock.
+      - name: Build image
+        run: |
+          docker build \
+            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.19 \
+            -t sms-gammu-gateway:ci \
+            sms-gammu-gateway
+      - name: Verify python-gammu links the patched libGammu
+        run: |
+          docker run --rm sms-gammu-gateway:ci \
+            python3 -c "import gammu; print(gammu.Version())"
