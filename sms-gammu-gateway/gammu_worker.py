@@ -16,6 +16,12 @@ loop in a dedicated thread and callers submit work with run_coroutine_threadsafe
 Attribute access returns a callable that dispatches the matching StateMachine method
 by name, so existing `machine.SendSMS(...)` call sites work unchanged.
 
+Owning the queue is also what makes recovery possible. A caller that gives up cancels
+its command, so an abandoned backlog is dropped rather than replayed against a modem
+that has just come back. And because a worker that never returns would swallow every
+later command -- including the soft reset that recovers the modem -- a run of
+consecutive timeouts exits the process so the Supervisor restarts the add-on.
+
 Re-entrancy: incoming SMS and call callbacks registered with SetIncomingCallback are
 invoked *on the worker thread*, from inside ReadDevice. A callback that calls back
 into this proxy would enqueue work behind itself and block forever. Callbacks must
@@ -24,6 +30,7 @@ hand off to another thread; mqtt_publisher does this with a threading.Timer.
 
 import asyncio
 import logging
+import os
 import threading
 
 import gammu
@@ -43,6 +50,32 @@ DEFAULT_TIMEOUT = 60
 # command rather than a short startup timeout.
 STARTUP_TIMEOUT = 60
 
+# Consecutive timeouts before the add-on gives up and restarts. libGammu normally
+# bounds its own waits -- the SMS prompt stall returns TIMEOUT[14] after 29s -- and
+# the queue drains once it does. A worker that never returns is a different failure:
+# every later command times out behind it, including the soft reset that would
+# otherwise recover the modem. Nothing inside the process can clear that, because the
+# stuck call cannot be interrupted from Python.
+STALL_LIMIT = 3
+
+# EX_SOFTWARE. Any non-zero exit makes the Supervisor restart the add-on.
+STALL_EXIT_CODE = 70
+
+
+def restart_process(timeouts):
+    """Exit so the Supervisor restarts the add-on.
+
+    os._exit rather than sys.exit: this runs on a caller's thread, and SystemExit
+    raised off the main thread only unwinds that thread. The gammu thread is blocked
+    inside libGammu and cannot be joined, so an orderly shutdown is not on offer.
+    Logging is flushed first because os._exit skips interpreter cleanup.
+    """
+    logger.critical(
+        "Gammu worker stalled for %d consecutive commands; restarting the add-on", timeouts
+    )
+    logging.shutdown()
+    os._exit(STALL_EXIT_CODE)
+
 
 class _ExceptionPreservingThread(GammuAsyncThread):
     """Worker thread that reports the original gammu exception.
@@ -56,6 +89,17 @@ class _ExceptionPreservingThread(GammuAsyncThread):
     """
 
     def _do_command(self, future, cmd, params, percentage=100):
+        # A caller that timed out cancels its future. Running the command anyway would
+        # drive the modem for a result nobody is waiting for, and after a long stall
+        # the entire backlog would replay in a burst against a modem that just came
+        # back. Init and Terminate arrive as plain strings and are never skipped.
+        #
+        # Reading cancelled() from this thread is a state read on the asyncio future;
+        # the worst case is executing a command abandoned microseconds earlier.
+        if hasattr(future, "cancelled") and future.cancelled():
+            logger.debug("Skipping abandoned gammu command %s", cmd)
+            return
+
         func = getattr(self._sm, cmd)
         try:
             result = gammu.worker._execute_command(func, params)
@@ -67,6 +111,31 @@ class _ExceptionPreservingThread(GammuAsyncThread):
 
 class _Worker(GammuAsyncWorker):
     """GammuAsyncWorker using the exception preserving thread."""
+
+    def worker_callback(self, name, result, error, percents):
+        """Deliver a result, unless the caller has already given up on it.
+
+        A command that was mid-flight when its caller timed out still runs to
+        completion, and the base implementation would then call set_result on a
+        cancelled future -- InvalidStateError, once per timeout, surfacing as a
+        loop exception rather than anywhere useful. The check runs on the loop
+        thread so it cannot race the cancellation it is testing for.
+        """
+        if not hasattr(name, "set_result"):
+            super().worker_callback(name, result, error, percents)
+            return
+
+        def deliver():
+            if name.done():
+                logger.debug("Discarding gammu result for an abandoned command")
+            elif error is None:
+                name.set_result(result)
+            elif isinstance(error, Exception):
+                name.set_exception(error)
+            else:
+                name.set_exception(gammu.GSMError(error))
+
+        self._loop.call_soon_threadsafe(deliver)
 
     async def init_async(self):
         self._init_future = self._loop.create_future()
@@ -81,9 +150,20 @@ class _Worker(GammuAsyncWorker):
 class GammuWorkerProxy:
     """Presents the StateMachine API, executes every call on the worker thread."""
 
-    def __init__(self, config, timeout=DEFAULT_TIMEOUT, worker_factory=_Worker):
+    def __init__(
+        self,
+        config,
+        timeout=DEFAULT_TIMEOUT,
+        worker_factory=_Worker,
+        stall_limit=STALL_LIMIT,
+        on_stall=restart_process,
+    ):
         self._timeout = timeout
         self._worker_factory = worker_factory
+        self._stall_limit = stall_limit
+        self._on_stall = on_stall
+        self._timeouts = 0
+        self._timeouts_lock = threading.Lock()
         self._loop = asyncio.new_event_loop()
         self._ready = threading.Event()
         self._thread = threading.Thread(target=self._run_loop, name="gammu-loop", daemon=True)
@@ -112,20 +192,36 @@ class GammuWorkerProxy:
     def _submit(self, coro, timeout):
         pending = asyncio.run_coroutine_threadsafe(coro, self._loop)
         try:
-            return pending.result(timeout)
+            result = pending.result(timeout)
         except TimeoutError:
-            # The command stays queued and the worker thread keeps running it. That
-            # is the point: it cannot race a later command. Claim the eventual result
-            # so it is not reported as a never-retrieved exception.
+            # Cancelling drops the command if the worker has not reached it yet; a
+            # command already executing runs to completion, because libGammu cannot
+            # be interrupted. Either way it never races the next one.
+            pending.cancel()
             pending.add_done_callback(self._discard_late_result)
+            self._record_timeout()
             raise
+        else:
+            self._record_success()
+            return result
+
+    def _record_timeout(self):
+        with self._timeouts_lock:
+            self._timeouts += 1
+            timeouts = self._timeouts
+        if self._stall_limit and timeouts >= self._stall_limit:
+            self._on_stall(timeouts)
+
+    def _record_success(self):
+        with self._timeouts_lock:
+            self._timeouts = 0
 
     @staticmethod
     def _discard_late_result(pending):
         try:
             pending.result()
-        except Exception as exc:  # noqa: BLE001 - the caller already gave up
-            logger.debug("Late gammu result discarded: %s", exc)
+        except (Exception, asyncio.CancelledError) as exc:  # noqa: BLE001 - caller gave up
+            logger.debug("Late gammu result discarded: %s", type(exc).__name__)
 
     async def _create(self, config):
         worker = self._worker_factory()
