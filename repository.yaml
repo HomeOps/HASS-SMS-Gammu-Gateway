@@ -1,4 +1,4 @@
 # https://developers.home-assistant.io/docs/add-ons/repository#repository-configuration
-name: Pavel's Home Assistant add-on repository
-url: 'https://github.com/PavelVe/home-assistant-addons'
-maintainer: PavelVe <vejnar.p@gmail.com>
+name: HomeOps Home Assistant add-on repository
+url: 'https://github.com/HomeOps/HASS-SMS-Gammu-Gateway'
+maintainer: ocalvo <oscar@calvonet.com>

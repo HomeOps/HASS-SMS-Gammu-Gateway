@@ -1,0 +1,55 @@
+name: Publish add-on images
+
+on:
+  push:
+    tags:
+      - "sms-gammu-gateway-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to tag the images with (e.g. 1.7.2)"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [aarch64, amd64, armhf, armv7, i386]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read add-on version
+        id: meta
+        run: |
+          version="${{ github.event.inputs.version }}"
+          if [ -z "$version" ]; then
+            version=$(python3 -c "import json; print(json.load(open('sms-gammu-gateway/config.json'))['version'])")
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The official builder cross-builds with QEMU and applies the add-on
+      # labelling Supervisor expects.
+      - name: Build and push
+        uses: home-assistant/builder@2024.03.5
+        with:
+          args: |
+            --${{ matrix.arch }} \
+            --target /data/sms-gammu-gateway \
+            --image hass-sms-gammu-gateway-{arch} \
+            --docker-hub ghcr.io/homeops \
+            --version ${{ steps.meta.outputs.version }} \
+            --addon
