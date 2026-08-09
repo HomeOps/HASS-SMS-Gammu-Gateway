@@ -1,0 +1,37 @@
+[tool.pytest.ini_options]
+# The add-on ships as flat modules in sms-gammu-gateway/, so tests import them
+# directly rather than as a package.
+pythonpath = ["sms-gammu-gateway"]
+testpaths = ["sms-gammu-gateway/tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: needs libgammu, exercised against gammu's dummy driver",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Inherited modules are excluded rather than reformatted. A repo-wide format
+# commit would conflict with every upstream change and make merges expensive;
+# files get brought under lint as they are otherwise modified.
+extend-exclude = [
+    "sms-gammu-gateway/mqtt_publisher.py",
+    "sms-gammu-gateway/mqtt_publisher_old.py",
+    "sms-gammu-gateway/run.py",
+    "sms-gammu-gateway/support.py",
+    "sms-gammu-gateway/urc_filter.py",
+    "minidlna-server",
+    "TeltonikaServer",
+    # ruff formats Python examples embedded in markdown; leave the docs alone.
+    "*.md",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "C4", "SIM"]
+ignore = [
+    "E501",    # long lines are pervasive upstream; not worth a reformat commit
+    "SIM105",  # contextlib.suppress over try/except/pass is a style change
+]
+
+[tool.ruff.lint.per-file-ignores]
+"sms-gammu-gateway/tests/*" = ["SLF001"]  # tests exercise private helpers
