@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.5](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.4...sms-gammu-gateway-v1.8.5) (2026-08-09)
+
+
+### Bug Fixes
+
+* **tests:** use a reserved example number instead of a real one ([e3bf3ab](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/e3bf3abf91621edd41ac06d1b450f35372d8fed5))
+* **tests:** use a reserved example number instead of a real one ([a378b1c](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/a378b1c8e5f2b4a5b336777d706ca6ac645a6556))
+
+
+### Documentation
+
+* record the SIM7670G as verified through the add-on ([f4ea352](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/f4ea352244467b3f2674bddf4cbfeede6f161e07))
+* record the SIM7670G as verified through the add-on ([dc068d6](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/dc068d68c27b13ad9cc301f4707fdd30c7cd3b35))
+
 ## [1.8.4](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.3...sms-gammu-gateway-v1.8.4) (2026-08-09)
 
 
