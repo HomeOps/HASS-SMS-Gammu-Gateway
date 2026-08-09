@@ -11,7 +11,7 @@ from support import deleteSms, encodeSms, retrieveAllSms
 pytestmark = pytest.mark.integration
 
 
-def send(machine, smsc, text, number="+14252146123"):
+def send(machine, smsc, text, number="+15555550100"):
     """Send one message through the same encode path the add-on uses."""
     smsinfo = {
         "Class": -1,
@@ -79,7 +79,7 @@ class TestRetrieveAndDelete:
                 # location; 1 is the first real folder.
                 "Folder": 1,
                 "State": "UnRead",
-                "Number": "+14252146123",
+                "Number": "+15555550100",
                 "SMSC": smsc,
                 "Text": "stored message",
                 "Class": -1,
@@ -87,7 +87,7 @@ class TestRetrieveAndDelete:
         )
         messages = retrieveAllSms(dummy_phone)
         assert len(messages) == 1
-        assert messages[0]["Number"] == "+14252146123"
+        assert messages[0]["Number"] == "+15555550100"
 
     def test_delete_removes_the_message(self, dummy_phone, smsc):
         dummy_phone.AddSMS(
@@ -96,7 +96,7 @@ class TestRetrieveAndDelete:
                 # location; 1 is the first real folder.
                 "Folder": 1,
                 "State": "UnRead",
-                "Number": "+14252146123",
+                "Number": "+15555550100",
                 "SMSC": smsc,
                 "Text": "to be deleted",
                 "Class": -1,
