@@ -6,6 +6,16 @@
       "release-type": "simple",
       "package-name": "sms-gammu-gateway",
       "changelog-path": "CHANGELOG.md",
+      "changelog-sections": [
+        { "type": "feat", "section": "Features" },
+        { "type": "fix", "section": "Bug Fixes" },
+        { "type": "perf", "section": "Performance" },
+        { "type": "build", "section": "Build and packaging" },
+        { "type": "docs", "section": "Documentation" },
+        { "type": "test", "section": "Tests", "hidden": true },
+        { "type": "ci", "section": "CI", "hidden": true },
+        { "type": "chore", "section": "Housekeeping", "hidden": true }
+      ],
       "extra-files": [
         {
           "type": "json",
