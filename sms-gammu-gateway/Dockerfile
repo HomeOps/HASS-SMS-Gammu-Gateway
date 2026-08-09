@@ -104,6 +104,7 @@ WORKDIR /app
 # Copy application files
 COPY run.py .
 COPY support.py .
+COPY gammu_worker.py .
 COPY urc_filter.py .
 COPY mqtt_publisher.py .
 COPY config.json .
