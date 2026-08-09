@@ -1727,14 +1727,20 @@ class MQTTPublisher:
         if self._is_post_call_recovery() and operation_name != "Reset":
             logger.debug(f"⏸️ Skipping '{operation_name}' - post-call recovery in progress")
             raise Exception("Post-call recovery in progress, modem busy")
-        # Use lock to serialize all Gammu operations (prevent race conditions on serial port)
+        # The gammu worker thread owns the state machine and executes one command at a
+        # time, so this lock no longer protects the serial port — the worker does that
+        # unconditionally, including against callers that forget to take a lock. What
+        # it still does is keep multi-step sequences coherent: retrieveAllSms walks the
+        # SIM with GetSMSStatus followed by repeated GetNextSMS, and a delete arriving
+        # between those commands would renumber locations mid-enumeration.
+        #
+        # Timeouts are enforced per command inside GammuWorkerProxy. The executor that
+        # used to provide them was actively harmful: shutdown(wait=False) let a timed
+        # out call keep running against the port after the lock was released, so the
+        # next operation raced it.
         with self.gammu_lock:
-            executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-            future = executor.submit(gammu_function, *args, **kwargs)
             try:
-                # Python-level timeout (60s) as second defense layer
-                # Primary defense is Gammu commtimeout=40s in config
-                result = future.result(timeout=60)
+                result = gammu_function(*args, **kwargs)
                 self.device_tracker.record_success()
                 self.publish_device_status()
                 logger.debug(f"✅ Gammu operation '{operation_name}' succeeded")
@@ -1744,20 +1750,17 @@ class MQTTPublisher:
                 time.sleep(0.3)
 
                 return result
-            except concurrent.futures.TimeoutError:
-                # Operation timed out at Python level
-                self.device_tracker.record_failure(f"{operation_name}: Python timeout (60s)")
+            except TimeoutError:
+                # The command is still queued on the worker thread; later commands wait
+                # behind it rather than running concurrently with it.
+                self.device_tracker.record_failure(f"{operation_name}: gammu worker timeout")
                 self.publish_device_status()
-                logger.error(f"⏱️ Gammu operation '{operation_name}' timed out after 60s")
-                raise TimeoutError(f"Gammu operation '{operation_name}' timed out after 60s")
+                logger.error(f"⏱️ Gammu operation '{operation_name}' timed out")
+                raise
             except Exception as e:
-                # All other errors (including Gammu commtimeout errors)
                 self.device_tracker.record_failure(f"{operation_name}: {str(e)}")
                 self.publish_device_status()
                 raise
-            finally:
-                # Never wait for stuck threads — prevents deadlock when Gammu hangs on serial port
-                executor.shutdown(wait=False)
     
     def _publish_initial_states(self):
         """Publish initial sensor states on startup"""
