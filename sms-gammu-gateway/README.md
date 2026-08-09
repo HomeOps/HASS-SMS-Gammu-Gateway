@@ -6,7 +6,24 @@
 ![Supports armv7 Architecture][armv7-shield]
 ![Supports i386 Architecture][i386-shield]
 
-REST API SMS Gateway using python-gammu for USB GSM modems. Developed and tested with **SIM800L**; other modems may work but are community-supported.
+REST API SMS Gateway using python-gammu for USB GSM modems.
+
+> ## 📶 In the USA you need an LTE modem, and this fork supports one
+>
+> The **SIM800L is a 2G-only module**, and 2G no longer exists in the United States. AT&T and
+> Verizon retired theirs years ago and **T-Mobile completed its shutdown on 2 August 2026**. A
+> SIM800L in the US now registers nowhere and sends nothing — there is no configuration that fixes
+> it. The same is true of older LTE dongles without an IMS/VoLTE stack, such as the Huawei E3372:
+> they carried SMS over the legacy circuit-switched core, which was retired alongside 2G.
+>
+> **This fork is verified send/receive with the SIMCom SIM7670G**, an LTE Cat-1 bis module with
+> VoLTE, on AT&T. It requires a libGammu fix that this fork's image ships
+> ([gammu/gammu#1177](https://github.com/gammu/gammu/pull/1177)) — without it every send fails with
+> `TIMEOUT[14]` even though the modem is registered and healthy. See
+> [Supported hardware](#supported-hardware).
+>
+> Outside the US this matters less: 2G is still widely available across Europe, where the SIM800L
+> remains a perfectly reasonable and well-tested choice.
 
 ## About
 
@@ -58,6 +75,7 @@ This add-on provides a complete SMS gateway solution for Home Assistant, replaci
 - SIM card with SMS capability
 - Optional: MQTT broker for full integration
 
+<a id="supported-hardware"></a>
 ## Supported hardware
 
 This add-on is **developed and tested exclusively with SIM800L** modems — that's the hardware the author owns and verifies releases against.
@@ -70,6 +88,50 @@ What this means in practice:
 - 💡 If your modem works with raw AT commands (e.g. via `microcom`) but not here, it's usually a startup-timing / unsolicited-message (URC) quirk specific to that modem family.
 
 If reliable operation matters to you, a **SIM800L-based module is the recommended choice**.
+
+### Additionally verified in this fork: SIMCom SIM7670G
+
+**The SIM7670G works with this fork.** It does *not* work with a stock libGammu, and the reason is
+not the modem.
+
+libGammu only recognises the SMS edit prompt as the exact string `"> "`. The SIM7670G emits a bare
+`">"` terminated by CRLF (`0d 0a 3e 0d 0a` — no `0x20`), so the prompt is never matched,
+`GSM_SendSMS` blocks in `GSM_WaitFor` until `commtimeout`, and **every send fails with
+`TIMEOUT[14]`** while the modem looks perfectly healthy: registered, good signal, receiving fine.
+Diagnosed and fixed upstream in [gammu/gammu#1176](https://github.com/gammu/gammu/issues/1176) /
+[#1177](https://github.com/gammu/gammu/pull/1177); this fork's image builds libGammu with that fix
+applied, so sending works out of the box.
+
+What was verified on real hardware (SIM7670G-LNGV, firmware `2382B02SIM767XM5A`, AT&T, CDC-ACM at
+115200):
+
+- **Send** — stock libGammu: `TIMEOUT[14]`. Patched libGammu: `message reference=4`, delivered.
+- **Receive** — inbound SMS read and published normally.
+
+Not yet verified: the full add-on running against the patched image on this module. Send was proven
+with the patched library directly. If you run it, reports are welcome.
+
+**Where to buy:**
+[AliExpress](https://www.aliexpress.com/w/wholesale-SIM7670G.html) ·
+[Amazon](https://www.amazon.com/s?k=SIM7670G)
+
+Both are searches rather than specific listings, since individual listings disappear constantly.
+AliExpress has far better availability and pricing for this part; Amazon carries it only
+intermittently and usually at a markup, so check there first only if you want faster delivery or an
+easier return path.
+
+Look for a **USB board** (not a bare module needing a carrier), with an LTE antenna and a nano-SIM
+slot. The variant verified here reports itself as `SIM7670G-LNGV`. Expect roughly USD 20–30.
+
+Practical notes for this module:
+
+- It presents **three CDC-ACM interfaces**. Use `-if02` for the add-on. `-if04` is the DIAG/QCDM
+  port and returns binary; `-if06` is a second, fully functional AT port that can be driven
+  independently while the add-on holds `-if02`.
+- **Use the `by-id` path**, not `/dev/ttyACM*`. The ACM numbering shifts on every re-enumeration,
+  and a stale number is the usual cause of `ERR_DEVICEOPENERROR` after a modem reset.
+- `GSM Network: Unknown` is a reporting gap between gammu and this module, **not** a registration
+  failure. If inbound SMS arrive, the modem is registered.
 
 ## Installation
 
@@ -86,7 +148,7 @@ If reliable operation matters to you, a **SIM800L-based module is the recommende
 
 If you run Home Assistant as a manual Docker container (HA Container) — or you don't use Home Assistant at all — you can still run the gateway as a standalone Docker container. The MQTT auto-discovery will integrate it into HA the same way as the add-on.
 
-> Thanks to [@mickeyreg](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/issues/15#issuecomment-4582397033) for figuring this out.
+> Thanks to [@mickeyreg](https://github.com/PavelVe/home-assistant-addons/issues/15#issuecomment-4582397033) for figuring this out.
 
 **Limitations:**
 - The HA Ingress web UI is not available — access the web UI directly on port `5000`.
