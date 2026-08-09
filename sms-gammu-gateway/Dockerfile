@@ -12,7 +12,11 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # so there is exactly one source of truth. When that PR is merged the build fails
 # on purpose -- see the guard below -- forcing a move to a released gammu instead
 # of quietly carrying a patch that is no longer needed.
-ARG GAMMU_VERSION=1.42.0
+#
+# GAMMU_VERSION must satisfy GAMMU_REQUIRED in python-gammu's setup.py, which is
+# 1.44.0 as of python-gammu 3.4.0. Building the sdist against anything older
+# fails with "Can not find supported Gammu version using pkg-config!".
+ARG GAMMU_VERSION=1.44.0
 ARG GAMMU_PR=1177
 
 COPY requirements.txt /app/requirements.txt
@@ -70,8 +74,15 @@ RUN apk update \
         -DBUILD_TESTING=OFF \
     && make -C /tmp/gammu-build -j2 \
     && make -C /tmp/gammu-build install \
-    # Compiled here so it links the patched libGammu, not a packaged one.
-    && pip3 install --break-system-packages --no-cache-dir -r /app/requirements.txt \
+    # --no-binary python-gammu is load bearing. PyPI ships musllinux wheels that
+    # auditwheel has repaired, meaning they carry their own libGammu (plus
+    # libssl, libcrypto, libmariadb, libpq, ...) inside python_gammu.libs/ with
+    # the ELF references rewritten to point there. Installing that wheel makes
+    # the extension ignore the patched library built above, and sending fails
+    # with TIMEOUT[14]. Building from the sdist compiles against gammu-dev and
+    # links /usr/lib/libGammu.so.8, and drops the bundled copies with it.
+    && pip3 install --break-system-packages --no-cache-dir \
+        --no-binary python-gammu -r /app/requirements.txt \
     && apk del .build-deps \
     && rm -rf /tmp/gammu-src /tmp/gammu-build /tmp/gammu-pr.diff /var/cache/apk/*
 
