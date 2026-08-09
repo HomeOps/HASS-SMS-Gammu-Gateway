@@ -6,11 +6,8 @@
   "description": "SMS gateway for USB GSM modems with REST API, MQTT integration and Home Assistant auto-discovery. Ships a patched libGammu so LTE modems that emit a bare SMS prompt work: SIMCom SIM7670G verified send/receive (2G-only modules such as SIM800L no longer work in the USA). Upstream is developed and tested with SIM800L; other modems may work but are community-supported. Send/receive SMS, Flash SMS support, signal and network monitoring, incoming and missed call detection, SMS cost tracking. Web UI with Swagger documentation.",
   "startup": "services",
   "arch": [
-    "amd64",
-    "i386",
     "aarch64",
-    "armv7",
-    "armhf"
+    "amd64"
   ],
   "boot": "auto",
   "panel_icon": "mdi:cellphone-message",
