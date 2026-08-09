@@ -1,14 +1,20 @@
 name: Publish add-on images
 
 on:
-  push:
-    tags:
-      - "sms-gammu-gateway-v*"
+  # Called by release-please after it creates a release. A tag push cannot be
+  # used as the trigger: release-please pushes with GITHUB_TOKEN, and GitHub
+  # does not start workflows from events created by that token.
+  workflow_call:
+    inputs:
+      version:
+        description: "Version to tag the images with"
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to tag the images with (e.g. 1.7.2)"
-        required: true
+        description: "Version to tag the images with (e.g. 1.8.1). Defaults to config.json."
+        required: false
 
 permissions:
   contents: read
@@ -25,14 +31,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read add-on version
+      - name: Resolve version
         id: meta
         run: |
-          version="${{ github.event.inputs.version }}"
+          version="${{ inputs.version }}"
           if [ -z "$version" ]; then
             version=$(python3 -c "import json; print(json.load(open('sms-gammu-gateway/config.json'))['version'])")
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Publishing version $version"
 
       - name: Log in to ghcr.io
         uses: docker/login-action@v3
