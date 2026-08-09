@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.1](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.8.0...sms-gammu-gateway-v1.8.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* point installation at this repository and publish prebuilt images ([c5a958a](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/c5a958ab2b2dae8ba10fe986d0b117bf5f79882e))
+* point installation at this repository and publish prebuilt images ([7851033](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/commit/785103337c73a5dd2c0d7e39a93d9a414e169344))
+
 ## [1.8.0](https://github.com/HomeOps/HASS-SMS-Gammu-Gateway/compare/sms-gammu-gateway-v1.7.1...sms-gammu-gateway-v1.8.0) (2026-08-09)
 
 First release of the HomeOps fork. Upstream 1.7.1 plus the changes below.
