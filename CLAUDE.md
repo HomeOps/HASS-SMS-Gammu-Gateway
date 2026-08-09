@@ -32,14 +32,19 @@ because in a normal project the build system is developer-facing scaffolding.
 
 **Here it is inverted: the Dockerfile is the product.** The patched libGammu that
 makes SMS work on SIMCom modems exists nowhere else in the tree — it is created
-by the `git clone` / `patch` / `cmake` steps in `sms-gammu-gateway/Dockerfile`.
-A Dockerfile-only change that did not release would leave every user running the
-old image with no signal that anything happened.
+by the `curl` / `tar` / `cmake` steps in `sms-gammu-gateway/Dockerfile`, which build
+a pinned upstream commit. A Dockerfile-only change that did not release would leave
+every user running the old image with no signal that anything happened.
 
-This is not hypothetical. The build carries a deliberate tripwire that fails once
-[gammu/gammu#1177](https://github.com/gammu/gammu/pull/1177) is merged upstream,
-forcing a switch to a released gammu. That fix will touch only the Dockerfile.
-It must ship.
+This is not hypothetical, and it has already happened once. The build carried a
+tripwire that failed as soon as
+[gammu/gammu#1177](https://github.com/gammu/gammu/pull/1177) was merged upstream; it
+fired 13 seconds after the merge on 2026-08-09 and turned every branch red until the
+Dockerfile moved from patching to a pinned commit. That change touched only the
+Dockerfile, and it had to ship.
+
+The current tripwire is the successor: it fails once gammu cuts any release newer
+than `GAMMU_LAST_RELEASE`, since any release after the merge carries the fix.
 
 `refactor:` is likewise releasable here — it changes code baked into the image.
 
