@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 # {Model, DebugLevel, Device, Connection, DebugFile, UseGlobalDebugFile, LockDevice,
 # StartInfo, SyncTime} with ValueError, and libGammu never reads commtimeout anyway
 # -- it appears only in smsd/core.c, the SMS daemon's own configuration.
-DEFAULT_TIMEOUT = 60
+DEFAULT_TIMEOUT = int(os.environ.get("GAMMU_COMMAND_TIMEOUT", "60"))
 
 # Init and Terminate talk to the modem, so they get the same allowance as any other
 # command rather than a short startup timeout.
@@ -56,7 +56,11 @@ STARTUP_TIMEOUT = 60
 # every later command times out behind it, including the soft reset that would
 # otherwise recover the modem. Nothing inside the process can clear that, because the
 # stuck call cannot be interrupted from Python.
-STALL_LIMIT = 3
+#
+# Both this and DEFAULT_TIMEOUT read the environment so the end-to-end tests can
+# reach the give-up path in seconds instead of three minutes. Operators can use
+# them too: a slow modem on a long multipart send may want a larger timeout.
+STALL_LIMIT = int(os.environ.get("GAMMU_STALL_LIMIT", "3"))
 
 # EX_SOFTWARE. Any non-zero exit makes the Supervisor restart the add-on.
 STALL_EXIT_CODE = 70

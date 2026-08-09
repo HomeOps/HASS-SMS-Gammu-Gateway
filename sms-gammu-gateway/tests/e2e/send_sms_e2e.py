@@ -21,6 +21,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -41,12 +42,15 @@ SMSC = "+12063130004"
 SEND_TIMEOUT = 90
 STARTUP_TIMEOUT = 90
 
+# EX_SOFTWARE, what gammu_worker exits with when the modem stops answering entirely.
+STALL_EXIT_CODE = 70
+
 
 def log(message):
     print(f"[e2e] {message}", flush=True)
 
 
-def write_options(device, urc_filter):
+def write_options(device, urc_filter, monitoring=False):
     """Stand in for the Supervisor, which normally renders /data/options.json."""
     options = {
         "device_path": device,
@@ -56,7 +60,10 @@ def write_options(device, urc_filter):
         "password": PASSWORD,
         # No broker in CI. The add-on treats MQTT as optional.
         "mqtt_enabled": False,
-        "sms_monitoring_enabled": False,
+        # Off by default so a send test measures only the send. The recovery
+        # scenario turns it on, because the soft reset lives in that loop.
+        "sms_monitoring_enabled": monitoring,
+        "sms_check_interval": 10,
         "modem_baud_rate": "115200",
         "urc_filter_enabled": urc_filter,
     }
@@ -76,6 +83,10 @@ def request(path, payload=None, timeout=30):
             return response.status, response.read().decode(errors="replace")
     except urllib.error.HTTPError as exc:
         return exc.code, exc.read().decode(errors="replace")
+    except Exception as exc:  # noqa: BLE001
+        # The watchdog exits the process mid-request, so the connection dies under
+        # us. That is the behaviour being tested, not an error in the harness.
+        return 0, f"no response: {type(exc).__name__}: {exc}"
 
 
 def wait_for_api(process):
@@ -91,19 +102,138 @@ def wait_for_api(process):
     raise SystemExit(f"add-on API did not come up within {STARTUP_TIMEOUT}s")
 
 
+def send(payload_text="end to end", timeout=SEND_TIMEOUT):
+    return request(
+        "/sms",
+        {"text": payload_text, "number": DESTINATION, "smsc": SMSC},
+        timeout=timeout,
+    )
+
+
+def scenario_recovery(modem, process):
+    """A modem that fails, then answers properly again, without restarting the add-on.
+
+    This is the user visible question behind the whole worker change: does a bad
+    stretch leave the gateway permanently degraded, or does it come back on its own?
+    """
+    status, _ = send()
+    log(f"first send while the modem is broken -> {status}")
+    if status == 200:
+        log("FAIL: the send should not have succeeded while the prompt was corrupt")
+        return False
+
+    modem.switch_to("padded")
+    log("modem now answers with a well formed prompt")
+
+    status, body = send()
+    log(f"second send -> {status}: {body.strip()[:120]}")
+
+    if process.poll() is not None:
+        log(
+            f"FAIL: the add-on exited (code {process.returncode}); recovery must not need a restart"
+        )
+        return False
+    if status != 200 or len(modem.submitted) != 1:
+        log(
+            f"FAIL: expected a successful send after recovery, got {status} "
+            f"and {len(modem.submitted)} PDU(s)"
+        )
+        return False
+
+    log("PASS: recovered in place, same process, message reached the modem")
+    return True
+
+
+def scenario_concurrent(modem, process):
+    """Several callers during a stall must not interleave on the port.
+
+    The old design submitted each operation to its own executor and abandoned it on
+    timeout, so a later command could reach the modem while an earlier one was still
+    mid-transaction. The modem counts that: a PDU cannot contain "AT".
+    """
+    results = []
+    threads = [
+        threading.Thread(target=lambda i=i: results.append(send(f"concurrent {i}")))
+        for i in range(3)
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=SEND_TIMEOUT + 30)
+
+    log(f"three concurrent sends returned {[status for status, _ in results]}")
+    log(f"modem observed {modem.overlaps} overlapping transaction(s)")
+
+    if modem.overlaps:
+        log("FAIL: commands interleaved on the port")
+        return False
+    if any(status == 200 for status, _ in results):
+        log("FAIL: no send should have succeeded against a silent modem")
+        return False
+
+    modem.switch_to("padded")
+    status, _ = send()
+    if status != 200:
+        log(f"FAIL: the port should be usable once the stall clears, got {status}")
+        return False
+
+    log("PASS: no interleaving, and the port still works afterwards")
+    return True
+
+
+def scenario_watchdog(modem, process):
+    """A modem that never answers cannot be recovered from inside the process.
+
+    Every later command queues behind a call that cannot be interrupted, including
+    the soft reset meant to fix it. The worker gives up and exits so the Supervisor
+    restarts the add-on.
+    """
+    for attempt in range(4):
+        status, _ = send(timeout=30)
+        log(f"send {attempt + 1} -> {status}")
+        if process.poll() is not None:
+            break
+
+    try:
+        code = process.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        log("FAIL: the add-on is still running after repeated stalls")
+        return False
+
+    log(f"add-on exited with code {code}")
+    if code != STALL_EXIT_CODE:
+        log(f"FAIL: expected EX_SOFTWARE ({STALL_EXIT_CODE})")
+        return False
+    if modem.submitted:
+        log("FAIL: nothing should have reached the modem")
+        return False
+
+    log("PASS: gave up and exited for the Supervisor to restart")
+    return True
+
+
+SCENARIOS = {
+    "recovery": scenario_recovery,
+    "concurrent": scenario_concurrent,
+    "watchdog": scenario_watchdog,
+}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--prompt", default="padded", choices=["padded", "bare", "garbage", "silent"]
     )
     parser.add_argument("--expect", default="sent", choices=["sent", "failed"])
+    parser.add_argument("--scenario", choices=sorted(SCENARIOS), help="run a recovery scenario")
+    parser.add_argument("--monitoring", action="store_true", help="enable the SMS monitor loop")
     parser.add_argument("--urc-filter", action="store_true", help="leave the URC filter proxy on")
     parser.add_argument("--app", default="/app", help="directory holding run.py")
     args = parser.parse_args()
 
     with FakeModem(prompt=args.prompt) as modem:
         log(f"fake modem on {modem.device}, prompt style={args.prompt}")
-        write_options(modem.device, args.urc_filter)
+        write_options(modem.device, args.urc_filter, args.monitoring)
 
         process = subprocess.Popen(
             [sys.executable, "-u", "run.py"],
@@ -115,6 +245,9 @@ def main():
         try:
             wait_for_api(process)
             log("add-on API is up; modem completed init")
+
+            if args.scenario:
+                return 0 if SCENARIOS[args.scenario](modem, process) else 1
 
             started = time.time()
             status, body = request(
